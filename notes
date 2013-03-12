@@ -1,0 +1,81 @@
+rdis2 data structures
+
+loaders
+    expect
+        a pointer to a buffer containing the contents of the binary to analyze
+    provide
+        memory map   -> a map of buffers
+        entries      -> a list of expected entry points for disassembly
+        label        -> labels an address
+        architecture -> returns the architecture to be used for disassembly
+
+architectures
+    except
+        nothing
+    provide
+        a list of supported disassemblies
+
+disassemblies
+    expect
+        a memory map
+        an entry
+    provide
+        a directed graph
+
+
+AN EXAMPLE
+----------
+struct _buffer * binary_buf = load_the_file_into_buf();
+struct _loader * loader = loader_select (binary_buf);
+if (loader == NULL)
+    not a valid binary;
+    
+struct _map  * mem_map = loader->memory_map(binary_buf);
+struct _list * entries = loader->entries(binary_buf);
+struct _arch * arch    = loader->arch(binary_buf);
+
+// functions is a map of lists of functions
+// where indexes into the map are the entry of the function
+// and there may exist multiple "functions" at an entry with multiple "states"
+// for now, though, initially, we will use the default_disassembly_option
+struct _map * functions;
+for each entry in entries {
+    struct _graph * graph = arch->default_disassembly_option->disassemble(mem_map, entry);
+    struct _function * function = new_function(entry, graph);
+    map_insert(functions, entry, function);
+    objects_delete(graph, function, NULL);
+}
+
+struct _loader {
+    struct _map   * (* memory_map) (struct _buffer * buffer);
+    struct _list  * (* entries)    (struct _buffer * buffer);
+    struct _label * (* label)      (struct _buffer * buffer);
+    struct _arch  * (* arch)       (struct _buffer * buffer);
+};
+
+struct _arch arch_x86 {
+    disassembly_options = arch_x86_disassembly_options;
+    default_disassembly_option = {
+        "x86 Recursive Disassembly",
+        x86_recursive_disassembly
+    };
+};
+
+struct _arch_disassembly_option arch_x86_disassembly_options[] {
+    {"x86 Recursive Disassembly", x86_recursive_disassembly},
+    {"x86 Emulated Disassembly",  x86_emulated_disassembly},
+    {NULL, NULL}
+};
+
+struct _arch {
+    struct _arch_disassembly_option * disassembly_options[];
+    struct _arch_disassembly_option * default_disassembly_option;
+};
+
+struct _arch_disassembly_option {
+    char * name;
+    struct _graph * (* disassemble) (struct _map *, uint64_t entry);
+};
+
+struct _graph * x86_recursive_disassemble (struct _map * mem_map, uint64_t entry);
+struct _graph * x86_emulated_disassemble  (struct _map * mem_map, uint64_t entry);
