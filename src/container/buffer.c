@@ -41,6 +41,34 @@ struct _buffer * buffer_create_null (size_t size)
 }
 
 
+struct _buffer * buffer_load_file (const char * filename)
+{
+    FILE * fh;
+    size_t filesize;
+
+    fh = fopen(filename, "rb");
+    if (fh == NULL)
+        return NULL;
+
+    fseek(fh, 0, SEEK_END);
+    filesize = ftell(fh);
+    fseek(fh, 0, SEEK_SET);
+
+    struct _buffer * buffer = buffer_create_null(filesize);
+
+    size_t bytes_read;
+    bytes_read = fread(buffer->bytes, 1, filesize, fh);
+
+    if (bytes_read != filesize) {
+        object_delete(buffer);
+        buffer = NULL;
+    }
+
+    fclose(fh);
+    return buffer;
+}
+
+
 void buffer_delete (struct _buffer * buffer)
 {
     free(buffer->bytes);

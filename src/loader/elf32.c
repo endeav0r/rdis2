@@ -284,8 +284,6 @@ struct _arch * elf32_arch (const struct _buffer * buffer)
     if (ehdr->e_machine == EM_386)
         return &arch_x86;
 
-    printf("ehdr->e_machine %d\n", ehdr->e_machine);
-
     return NULL;
 }
 
@@ -303,38 +301,8 @@ const char * elf32_label (const struct _buffer * buffer, uint64_t address)
                  && (sym->st_value == address)) {
                 const char * symbol = elf32_strtab(buffer, shdr->sh_link, sym->st_name);
                 if (symbol != NULL)
-                    printf("%s\n", symbol);
-                if (symbol != NULL)
                     return symbol;
             }
-        }
-    }
-
-    // plt
-
-    shdr = elf32_shdr_by_name(buffer, ".plt");
-    if (shdr == NULL)
-        return NULL;
-
-    printf("1");
-
-    if (    (address >= shdr->sh_addr)
-         && (address <  shdr->sh_addr + shdr->sh_size)) {
-        struct _arch * arch = elf32_arch(buffer);
-        struct _map * map = elf32_memory_map(buffer);
-        struct _ins * ins = arch->disassemble_ins(map, address);
-        object_delete(map);
-        printf("2");
-        if (ins != NULL) {
-            printf("3[%s]", ins->description);
-            struct _ins_value * successor = list_first(ins->successors);
-            if (successor != NULL) {
-                printf("4");
-                const char * name = elf32_rel_name_by_address(buffer, successor->address);
-                object_delete(ins);
-                return name;
-            }
-            object_delete(ins);
         }
     }
 
