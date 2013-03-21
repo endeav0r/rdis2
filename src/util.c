@@ -124,3 +124,97 @@ struct _list * ins_graph_to_list_index_call_dest (struct _graph * graph)
 
     return list;
 }
+
+
+char * str_append (char * string,
+                   size_t * str_size,
+                   size_t * str_len,
+                   const char * append)
+{
+    size_t append_len = strlen(append);
+
+    if (append_len + *str_len >= *str_size) {
+        *str_size = append_len + *str_len + 4096;
+        string = realloc(string, *str_size);
+        if (string == NULL)
+            return NULL;
+    }
+
+    strcat(string, append);
+
+    *str_len += append_len;
+
+    return string;
+}
+
+
+char * ins_graph_to_dot_string (struct _graph * graph)
+{
+    struct _graph * g = graph_create();
+    struct _graph_it * git;
+    for (git = graph_iterator(graph); git != NULL; git = graph_it_next(git)) {
+        struct _list * list = list_create();
+        list_append(list, graph_it_data(git));
+        graph_add_node(g, graph_it_index(git), list);
+        object_delete(list);
+    }
+
+    for (git = graph_iterator(graph); git != NULL; git = graph_it_next(git)) {
+        struct _list * successors = graph_node_successors(graph_it_node(git));
+
+        struct _list_it * lit;
+        for (lit = list_iterator(successors); lit != NULL; lit = lit->next) {
+            struct _graph_edge * edge = lit->data;
+            graph_add_edge(g, edge->head, edge->tail, edge->data);
+        }
+        object_delete(successors);
+    }
+
+    graph_reduce(g);
+
+
+    size_t str_size = 4096;
+    size_t str_len  = 0;
+    char * str = malloc(str_size);
+
+    str[0] = '\0';
+
+    str = str_append(str, &str_size, &str_len, "digraph G {\n");
+
+    for (git = graph_iterator(g); git != NULL; git = graph_it_next(git)) {
+        char tmp[256];
+        snprintf(tmp, 256, "block_%lld [label=\"",
+                 (unsigned long long) graph_it_index(git));
+        str = str_append(str, &str_size, &str_len, tmp);
+
+        struct _list * ins_list = graph_it_data(git);
+        struct _list_it * lit;
+        for (lit = list_iterator(ins_list); lit != NULL; lit = lit->next) {
+            struct _ins * ins = lit->data;
+            snprintf(tmp, 256, "%04llx %s\\l",
+                     (unsigned long long) ins->address,
+                     ins->description);
+
+            str = str_append(str, &str_size, &str_len, tmp);
+        }
+
+        str = str_append(str, &str_size, &str_len, "\"];\n");
+
+        struct _list * successors = graph_node_successors(graph_it_node(git));
+        for (lit = list_iterator(successors); lit != NULL; lit = lit->next) {
+            struct _graph_edge * edge = lit->data;
+            snprintf(tmp, 256, "block_%lld -> block_%lld;\n",
+                     (unsigned long long) edge->head,
+                     (unsigned long long) edge->tail);
+            str = str_append(str, &str_size, &str_len, tmp);
+        }
+
+        object_delete(successors);
+    }
+
+    str = str_append(str, &str_size, &str_len, "}");
+
+    object_delete(g);
+
+    return str;
+}

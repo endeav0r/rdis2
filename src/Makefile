@@ -23,7 +23,7 @@ clean :
 	make -C container clean
 	make -C loader clean
 	make -C arch clean
-	Make -C gui clean
+	make -C gui clean
 	rm -f *.o
 	rm -f rdis
 	rm -f rdis_gui

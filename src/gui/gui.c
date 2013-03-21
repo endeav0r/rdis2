@@ -9,7 +9,9 @@
 #include "queue.h"
 #include "util.h"
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum {
     FUNCTION_FUNCTION,
@@ -27,7 +29,10 @@ struct _gui * gui_create ()
 
     gui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gui->vbox   = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    gui->hpaned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    gui->image  = gtk_image_new_from_file(NULL);
 
+    gui->functionsScrolledWindow = gtk_scrolled_window_new(NULL, NULL);
     gui->functionsStore = gtk_list_store_new(FUNCTION_N, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
     gui->functionsView  = gtk_tree_view_new_with_model(GTK_TREE_MODEL(gui->functionsStore));
 
@@ -57,7 +62,12 @@ struct _gui * gui_create ()
     // menu stuff
     gui->menu   = gtk_menu_bar_new();
     GtkWidget * menuItemLoadExecFile = gtk_menu_item_new_with_label(LANG_LOAD_EXEC_FILE);
-    gtk_container_add(GTK_CONTAINER(gui->menu), menuItemLoadExecFile);
+    GtkWidget * menuItemFile         = gtk_menu_item_new_with_label(LANG_MENU_FILE);
+    GtkWidget * menuFile             = gtk_menu_new();
+
+    gtk_container_add(GTK_CONTAINER(menuFile), menuItemLoadExecFile);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuItemFile), menuFile);
+    gtk_container_add(GTK_CONTAINER(gui->menu), menuItemFile);
 
 
     // signal stuff
@@ -66,9 +76,21 @@ struct _gui * gui_create ()
                      G_CALLBACK(gui_load_executable_file),
                      gui);
 
+    g_signal_connect(gui->functionsView,
+                     "row-activated",
+                     G_CALLBACK(gui_function_activated),
+                     gui);
+
     // layout stuff
     gtk_box_pack_start(GTK_BOX(gui->vbox), gui->menu, FALSE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(gui->vbox), gui->functionsView, TRUE, TRUE, 0);
+    gtk_container_add(GTK_CONTAINER(gui->functionsScrolledWindow), gui->functionsView);
+    gtk_paned_add1(GTK_PANED(gui->hpaned), gui->functionsScrolledWindow);
+    gtk_paned_add2(GTK_PANED(gui->hpaned), gui->image);
+    /*
+    gtk_box_pack_start(GTK_BOX(gui->hbox), gui->functionsScrolledWindow, FALSE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(gui->hbox), gui->image, FALSE, TRUE, 0);
+    */
+    gtk_box_pack_start(GTK_BOX(gui->vbox), gui->hpaned, TRUE, TRUE, 0);
     gtk_container_add(GTK_CONTAINER(gui->window), gui->vbox);
 
     gtk_window_set_default_size(GTK_WINDOW(gui->window), 400, 300);
@@ -183,6 +205,37 @@ void gui_load_executable_file (GtkWidget * widget, struct _gui * gui)
     }
 
     gtk_widget_destroy(dialog);
+}
+
+
+void gui_function_activated (GtkTreeView * treeView,
+                             GtkTreePath * treePath,
+                             GtkTreeViewColumn * treeViewColumn,
+                             struct _gui * gui)
+{
+    GtkTreeIter treeIter;
+    struct _function * function;
+
+    gtk_tree_model_get_iter(GTK_TREE_MODEL(gui->functionsStore),
+                            &treeIter,
+                            treePath);
+    gtk_tree_model_get(GTK_TREE_MODEL(gui->functionsStore),
+                       &treeIter,
+                       FUNCTION_FUNCTION, &function,
+                       -1);
+
+    char * dotstr = ins_graph_to_dot_string(function->graph);
+
+    FILE * fh = fopen("/tmp/rdis2", "w");
+    if (fh == NULL) {
+        free(dotstr);
+        return;
+    }
+
+    fwrite(dotstr, 1, strlen(dotstr), fh);
+    fclose(fh);
+
+    free(dotstr);
 }
 
 

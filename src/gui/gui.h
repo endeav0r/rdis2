@@ -21,8 +21,12 @@ enum {
 struct _gui {
     GtkWidget * window;
     GtkWidget * vbox;
+    GtkWidget * hpaned;
     GtkWidget * menu;
 
+    GtkWidget * image;
+
+    GtkWidget    * functionsScrolledWindow;
     GtkWidget    * functionsView;
     GtkListStore * functionsStore;
 
@@ -32,5 +36,11 @@ struct _gui {
 
 
 void gui_load_executable_file (GtkWidget * widget, struct _gui * gui);
+
+void gui_function_activated (GtkTreeView * treeView,
+                             GtkTreePath * treePath,
+                             GtkTreeViewColumn * treeViewColumn,
+                             struct _gui * gui);
+
 
 #endif

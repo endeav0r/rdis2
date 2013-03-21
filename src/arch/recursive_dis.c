@@ -33,6 +33,8 @@ struct _graph * recursive_disassemble (const struct _map * mem_map,
         struct _list_it * lit;
         for (lit = list_iterator(ins->successors); lit != NULL; lit = lit->next) {
             struct _ins_value * successor = lit->data;
+            if (successor->type == INS_SUC_CALL)
+                continue;
             struct _index * index = index_create(successor->address);
             queue_push(queue, index);
             object_delete(index);

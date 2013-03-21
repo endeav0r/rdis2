@@ -20,4 +20,7 @@ struct _list * ins_graph_to_list_call_ins (struct _graph * graph);
 // successors of type call as a list of _index
 struct _list * ins_graph_to_list_index_call_dest (struct _graph * graph);
 
+// caller must free result
+char * ins_graph_to_dot_string (struct _graph * graph);
+
 #endif
