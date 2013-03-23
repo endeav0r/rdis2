@@ -183,7 +183,7 @@ char * ins_graph_to_dot_string (struct _graph * graph)
 
     for (git = graph_iterator(g); git != NULL; git = graph_it_next(git)) {
         char tmp[256];
-        snprintf(tmp, 256, "block_%lld [label=\"",
+        snprintf(tmp, 256, "block_%lld [shape=box, fontname=\"monospace\", fontsize=\"10.0\" label=\"",
                  (unsigned long long) graph_it_index(git));
         str = str_append(str, &str_size, &str_len, tmp);
 
@@ -212,7 +212,7 @@ char * ins_graph_to_dot_string (struct _graph * graph)
         object_delete(successors);
     }
 
-    str = str_append(str, &str_size, &str_len, "}");
+    str = str_append(str, &str_size, &str_len, "bgcolor=\"transparent\"\n}");
 
     object_delete(g);
 

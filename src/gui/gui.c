@@ -30,7 +30,9 @@ struct _gui * gui_create ()
     gui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gui->vbox   = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
     gui->hpaned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
-    gui->image  = gtk_image_new_from_file(NULL);
+
+    gui->imageScrolled = gtk_scrolled_window_new(NULL, NULL);
+    gui->image         = gtk_image_new_from_file(NULL);
 
     gui->functionsScrolledWindow = gtk_scrolled_window_new(NULL, NULL);
     gui->functionsStore = gtk_list_store_new(FUNCTION_N, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
@@ -85,7 +87,9 @@ struct _gui * gui_create ()
     gtk_box_pack_start(GTK_BOX(gui->vbox), gui->menu, FALSE, TRUE, 0);
     gtk_container_add(GTK_CONTAINER(gui->functionsScrolledWindow), gui->functionsView);
     gtk_paned_add1(GTK_PANED(gui->hpaned), gui->functionsScrolledWindow);
-    gtk_paned_add2(GTK_PANED(gui->hpaned), gui->image);
+
+    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(gui->imageScrolled), gui->image);
+    gtk_paned_add2(GTK_PANED(gui->hpaned), gui->imageScrolled);
     /*
     gtk_box_pack_start(GTK_BOX(gui->hbox), gui->functionsScrolledWindow, FALSE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(gui->hbox), gui->image, FALSE, TRUE, 0);
@@ -93,7 +97,9 @@ struct _gui * gui_create ()
     gtk_box_pack_start(GTK_BOX(gui->vbox), gui->hpaned, TRUE, TRUE, 0);
     gtk_container_add(GTK_CONTAINER(gui->window), gui->vbox);
 
-    gtk_window_set_default_size(GTK_WINDOW(gui->window), 400, 300);
+    gtk_window_set_default_size(GTK_WINDOW(gui->window), 800, 600);
+    gtk_widget_set_size_request(gui->functionsView, 240, 600);
+    gtk_widget_set_size_request(gui->imageScrolled, 560, 600);
 
     gtk_widget_show_all(gui->window);
 
@@ -236,6 +242,10 @@ void gui_function_activated (GtkTreeView * treeView,
     fclose(fh);
 
     free(dotstr);
+
+    system("dot -Tpng -O /tmp/rdis2");
+
+    gtk_image_set_from_file(GTK_IMAGE(gui->image), "/tmp/rdis2.png");
 }
 
 
@@ -244,6 +254,15 @@ int main (int argc, char * argv[])
     gtk_init(&argc, &argv);
 
     struct _gui * gui = gui_create();
+
+    struct _buffer * buffer = buffer_load_file("/home/endeavor/code/hsvm/assembler");
+    if (buffer != NULL) {
+        int error = gui_init_from_buf(gui, buffer);
+        if (error) {
+            fprintf(stderr, "gui error %d\n", error);
+        }
+        object_delete(buffer);
+    }
 
     gtk_main ();
 

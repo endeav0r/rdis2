@@ -24,6 +24,7 @@ struct _gui {
     GtkWidget * hpaned;
     GtkWidget * menu;
 
+    GtkWidget * imageScrolled;
     GtkWidget * image;
 
     GtkWidget    * functionsScrolledWindow;
