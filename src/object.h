@@ -1,8 +1,6 @@
 #ifndef object_HEADER
 #define object_HEADER
 
-#include <jansson.h>
-
 struct _object {
     void     (* delete)      (void *);
     void *   (* copy)        (const void *);

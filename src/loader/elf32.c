@@ -236,15 +236,6 @@ struct _map * elf32_memory_map (const struct _buffer * buffer)
         object_delete(buf);
     }
 
-    struct _map_it * mit;
-    for (mit = map_iterator(mem_map); mit != NULL; mit = map_it_next(mit)) {
-        struct _buffer * buffer = map_it_data(mit);
-
-        printf("%llx %lld\n",
-               (unsigned long long) map_it_key(mit),
-               (unsigned long long) buffer->size);
-    }
-
     return mem_map;
 }
 

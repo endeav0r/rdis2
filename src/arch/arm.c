@@ -33,13 +33,6 @@ struct _ins * arm_disassemble_ins (const struct _map * mem_map,
 
     size_t offset = address - buf_addr;
 
-    /*
-    printf("%lld %lld %lld %lld\n",
-           (unsigned long long) address,
-           (unsigned long long) buf_addr,
-           (unsigned long long) offset,
-           (unsigned long long) buf->size);
-    */
     if (offset + 4 >= buf->size)
         return NULL;
 
@@ -87,11 +80,8 @@ struct _ins * arm_disassemble_ins (const struct _map * mem_map,
         break;
 
     case I_MOV :
-        if (darm.Rd == PC)
-            printf("mov %d %d\n", darm.Rd, darm.Rm);
-        if ((darm.Rd == PC) && (darm.Rm == LR)) {
+        if ((darm.Rd == PC) && (darm.Rm == LR))
             break;
-        }
 
     default :
         ins_add_successor(ins, address + 4, INS_SUC_NORMAL);

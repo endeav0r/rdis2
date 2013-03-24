@@ -1,5 +1,7 @@
 #include "util.h"
 
+#include <stdio.h>
+
 #include "index.h"
 #include "instruction.h"
 

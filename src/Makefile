@@ -1,8 +1,8 @@
-OBJS=object.o util.o rdis.o
+OBJS=object.o util.o rdg.o rdg_node.o rdis.o
 
 CFLAGS=-Wall -Werror -g
-INCLUDE=-iquotecontainer/ -iquote./ -iquotearch/ -iquoteloader/
-LIBS=-ludis86 `pkg-config --libs gtk+-3.0` ../darm/libdarm.a
+INCLUDE=-iquotecontainer/ -iquote./ -iquotearch/ -iquoteloader/ `pkg-config --cflags cairo`
+LIBS=-ludis86 `pkg-config --libs cairo gtk+-3.0` ../darm/libdarm.a -lm
 
 all : $(OBJS)
 	make -C container
@@ -11,7 +11,7 @@ all : $(OBJS)
 	make -C gui
 
 	gcc *.o container/*.o arch/*.o loader/*.o -o rdis $(LIBS) $(CFLAGS)
-	gcc object.o util.o gui/*.o container/*.o arch/*.o loader/*.o -o rdis_gui $(LIBS) $(CFLAGS)
+	gcc object.o util.o rdg.o rdg_node.o gui/*.o container/*.o arch/*.o loader/*.o -o rdis_gui $(LIBS) $(CFLAGS)
 
 %.o : %.c %.h
 	$(CC) -c -o $@ $< $(INCLUDE) $(CFLAGS)

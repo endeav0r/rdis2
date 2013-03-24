@@ -7,6 +7,7 @@
 #include "loader.h"
 #include "map.h"
 #include "queue.h"
+#include "rdg.h"
 #include "util.h"
 #include "x86.h"
 
@@ -236,24 +237,23 @@ void gui_function_activated (GtkTreeView * treeView,
                        FUNCTION_FUNCTION, &function,
                        -1);
 
-    char * dotstr = ins_graph_to_dot_string(function->graph);
+    struct _graph * gg = ins_graph_to_list_ins_graph(function->graph);
+    graph_reduce(gg);
 
-    printf("dotstr strlen %d\n", (int) strlen(dotstr));
+    struct _rdg * rdg = rdg_create(function->address, gg);
 
-    FILE * fh = fopen("/tmp/rdis2", "w");
-    if (fh == NULL) {
-        free(dotstr);
-        return;
-    }
+    GdkPixbuf * pixbuf = gdk_pixbuf_get_from_surface(rdg->surface,
+                                                     0,
+                                                     0,
+                                                     rdg_width(rdg),
+                                                     rdg_height(rdg));
+    gtk_image_set_from_pixbuf(GTK_IMAGE(gui->image), pixbuf);
+    g_object_unref(pixbuf);
 
-    fwrite(dotstr, 1, strlen(dotstr), fh);
-    fclose(fh);
+    while (gtk_events_pending())
+        gtk_main_iteration();
 
-    free(dotstr);
-
-    system("dot -Tpng -O /tmp/rdis2");
-
-    gtk_image_set_from_file(GTK_IMAGE(gui->image), "/tmp/rdis2.png");
+    objects_delete(rdg, gg, NULL);
 }
 
 
@@ -263,8 +263,8 @@ int main (int argc, char * argv[])
 
     struct _gui * gui = gui_create();
 
-    struct _buffer * buffer = buffer_load_file("/home/endeavor/hack/hdm/libc-2.3.5.so");
-//    struct _buffer * buffer = buffer_load_file("/home/endeavor/code/hsvm/assembler");
+//    struct _buffer * buffer = buffer_load_file("/home/endeavor/hack/hdm/libc-2.3.5.so");
+    struct _buffer * buffer = buffer_load_file("/home/endeavor/code/hsvm/assembler");
     if (buffer != NULL) {
         int error = gui_init_from_buf(gui, buffer);
         if (error) {
