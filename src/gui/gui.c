@@ -8,6 +8,7 @@
 #include "map.h"
 #include "queue.h"
 #include "util.h"
+#include "x86.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,6 +130,11 @@ int gui_init_from_buf (struct _gui * gui, struct _buffer * buffer)
     if (gui->arch == NULL)
         return GUI_LOADER_NO_ARCH;
 
+    if (gui->arch == &arch_x86)
+        printf("arch x86\n");
+    else if (gui->arch == &arch_amd64)
+        printf("arch amd64\n");
+
     struct _list * entries = loader->entries(buffer);
     if (entries == NULL)
         return GUI_LOADER_NO_ENTRIES;
@@ -232,6 +238,8 @@ void gui_function_activated (GtkTreeView * treeView,
 
     char * dotstr = ins_graph_to_dot_string(function->graph);
 
+    printf("dotstr strlen %d\n", (int) strlen(dotstr));
+
     FILE * fh = fopen("/tmp/rdis2", "w");
     if (fh == NULL) {
         free(dotstr);
@@ -255,7 +263,8 @@ int main (int argc, char * argv[])
 
     struct _gui * gui = gui_create();
 
-    struct _buffer * buffer = buffer_load_file("/home/endeavor/code/hsvm/assembler");
+    struct _buffer * buffer = buffer_load_file("/home/endeavor/hack/hdm/libc-2.3.5.so");
+//    struct _buffer * buffer = buffer_load_file("/home/endeavor/code/hsvm/assembler");
     if (buffer != NULL) {
         int error = gui_init_from_buf(gui, buffer);
         if (error) {

@@ -6,7 +6,7 @@
 #include "instruction.h"
 #include "recursive_dis.h"
 
-struct _ins   * x86_disassemble_ins       (const struct _map * mem_map, const uint64_t address);
+struct _ins   * x86_disassemble_ins       (const struct _map *, const uint64_t address);
 struct _graph * x86_recursive_disassemble (const struct _map *, const uint64_t entry);
 
 struct _arch arch_x86 = {
@@ -59,7 +59,7 @@ struct _ins * x86_disassemble_ins_ (const struct _map * mem_map,
     ud_t ud_obj;
 
     ud_init(&ud_obj);
-    ud_set_mode(&ud_obj, 32);
+    ud_set_mode(&ud_obj, mode);
     ud_set_syntax(&ud_obj, UD_SYN_INTEL);
     ud_set_input_buffer(&ud_obj, &(buf->bytes[offset]), buf->size - offset);
 

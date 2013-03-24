@@ -2,7 +2,7 @@ OBJS=object.o util.o rdis.o
 
 CFLAGS=-Wall -Werror -g
 INCLUDE=-iquotecontainer/ -iquote./ -iquotearch/ -iquoteloader/
-LIBS=-ludis86 `pkg-config --libs gtk+-3.0`
+LIBS=-ludis86 `pkg-config --libs gtk+-3.0` ../darm/libdarm.a
 
 all : $(OBJS)
 	make -C container

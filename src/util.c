@@ -10,51 +10,51 @@ int mem_map_set (struct _map * mem_map, uint64_t address, struct _buffer * buf)
     struct _buffer * buf2 = map_fetch_max(mem_map, address + buf->size);
     uint64_t key          = map_fetch_max_key(mem_map, address + buf->size);
 
-    if (    (buf2 != NULL)
-         && (    ((address <= key) && (address + buf->size > key))
-              || (    (address <= key + buf2->size)
-                   && (address + buf->size > key + buf2->size))
-              || ((address >= key) && (address + buf->size < key + buf2->size)))) {
+    if (buf2 == NULL)
+        map_insert(mem_map, address, buf);
 
-        // if this section fits inside a previous section, modify in place
-        if ((address >= key) && (address + buf->size <= key + buf2->size)) {
-            memcpy(&(buf2->bytes[address - key]), buf->bytes, buf->size);
-        }
+    /*
+    * buf fits inside buf2
+    * |-------------| buf2
+    *   |----|        buf
+    */
+    else if ((address >= key) && (address + buf->size <= key + buf2->size))
+        memcpy(&(buf2->bytes[address - key]), buf->bytes, buf->size);
 
-        // if this section comes before a previous section
-        else if (address <= key) {
-            uint64_t new_size;
-            if (address + buf->size < key + buf2->size)
-                new_size = key + buf2->size;
-            else
-                new_size = address + buf->size;
-            new_size -= address;
+    /*
+    * buf envelops buf2
+    *    |--------|     buf2
+    * |---------------| buf
+    */
+    else if ((address <= key) && (address + buf->size > key + buf2->size)) {
+        map_remove(mem_map, key);
+        return mem_map_set(mem_map, address, buf);
+    }
 
-            uint8_t * tmp = malloc(new_size);
-            memcpy(&(tmp[key - address]), buf2->bytes, buf2->size);
-            memcpy(tmp, buf->bytes, buf->size);
+    /*
+    * buf overlaps buf2 in some other way
+    */
+    else if (    ((address < key) && (address + buf->size > key))
+         || ((address > key) && (address < key + buf2->size))) {
+        uint64_t lower  = (address < key) ? address : key;
+        uint64_t higher = address + buf->size;
 
-            struct _buffer * new_buffer = buffer_create(tmp, new_size);
-            free(tmp);
-            map_remove(mem_map, key);
-            map_insert(mem_map, address, new_buffer);
-            object_delete(new_buffer);
-        }
+        if (higher < key + buf2->size)
+            higher = key + buf2->size;
 
-        // if this section overlaps previous section but starts after previous
-        // section starts
-        else {
-            uint64_t new_size = address + buf->size - key;
-            uint8_t * tmp = malloc(new_size);
-            memcpy(tmp, buf2->bytes, buf2->size);
-            memcpy(&(tmp[address - key]), buf->bytes, buf->size);
+        struct _buffer * newbuf = buffer_create_null(higher - lower);
 
-            struct _buffer * new_buffer = buffer_create(tmp, new_size);
-            free(tmp);
-            map_remove(mem_map, key);
-            map_insert(mem_map, key, new_buffer);
-            object_delete(new_buffer);
-        }
+        size_t buf_offset  = address - lower;
+        size_t buf2_offset = key - lower;
+
+        memcpy(&(newbuf->bytes[buf2_offset]), buf2->bytes, buf2->size);
+        memcpy(&(newbuf->bytes[buf_offset]), buf->bytes, buf->size);
+
+        map_remove(mem_map, key);
+
+        mem_map_set(mem_map, lower, newbuf);
+
+        object_delete(newbuf);
     }
     else {
         map_insert(mem_map, address, buf);
@@ -183,22 +183,26 @@ char * ins_graph_to_dot_string (struct _graph * graph)
 
     for (git = graph_iterator(g); git != NULL; git = graph_it_next(git)) {
         char tmp[256];
-        snprintf(tmp, 256, "block_%lld [shape=box, fontname=\"monospace\", fontsize=\"10.0\" label=\"",
+        snprintf(tmp, 256, "block_%lld [shape=box, fontname=\"monospace\", fontsize=\"9.0\" label=<",
                  (unsigned long long) graph_it_index(git));
+
         str = str_append(str, &str_size, &str_len, tmp);
+
+        str = str_append(str, &str_size, &str_len, "<table cellspacing=\"0\" border=\"0\">");
 
         struct _list * ins_list = graph_it_data(git);
         struct _list_it * lit;
         for (lit = list_iterator(ins_list); lit != NULL; lit = lit->next) {
             struct _ins * ins = lit->data;
-            snprintf(tmp, 256, "%04llx %s\\l",
+
+            snprintf(tmp, 256, "<tr><td align=\"left\"><font color=\"blue\">%04llx</font></td><td align=\"left\">%s</td></tr>",
                      (unsigned long long) ins->address,
                      ins->description);
 
             str = str_append(str, &str_size, &str_len, tmp);
         }
 
-        str = str_append(str, &str_size, &str_len, "\"];\n");
+        str = str_append(str, &str_size, &str_len, "</table>>];\n");
 
         struct _list * successors = graph_node_successors(graph_it_node(git));
         for (lit = list_iterator(successors); lit != NULL; lit = lit->next) {
